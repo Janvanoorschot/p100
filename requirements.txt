@@ -1,3 +1,6 @@
-PyP100
+# PyP100
 pyyaml
 
+pycryptodome
+pkcs7
+requests
