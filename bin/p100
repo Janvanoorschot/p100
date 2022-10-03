@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import argparse
+import yaml
+import time
+
+rootdir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(rootdir)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Monitor Bubbles.')
+    parser.add_argument('--ip', type=str, default='192.168.2.2', help='P110 plug')
+    parser.add_argument('--username', type=str, default='some@one.com', help='username')
+    parser.add_argument('--password', type=str, default='secret', help='password')
+    args = parser.parse_args()
+
+    from PyP100 import PyP110
+    p110 = PyP110.P110(args.ip, args.username, args.password)
+    p110.handshake()
+    p110.login()
+
+    # import yaml
+    # vals = p110.getDeviceInfo()
+    # print(yaml.dump(vals))
+    while True:
+        vals = p110.getEnergyUsage()
+        print(vals['result']['current_power'])
+        time.sleep(5)
+
