@@ -3,6 +3,7 @@
 import sys
 import os
 import argparse
+import json
 import yaml
 import time
 
@@ -22,11 +23,10 @@ if __name__ == "__main__":
     p110.handshake()
     p110.login()
 
-    # import yaml
-    # vals = p110.getDeviceInfo()
-    # print(yaml.dump(vals))
-    while True:
-        vals = p110.getEnergyUsage()
-        print(vals['result']['current_power'])
-        time.sleep(5)
+    vals = p110.getDeviceInfo()
+    print(json.dumps(vals, indent=4))
+    vals = p110.getEnergyUsage()
+    print(json.dumps(vals, indent=4))
+    # print(vals['result']['current_power'])
+    # time.sleep(5)
 
