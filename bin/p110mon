@@ -31,10 +31,13 @@ def main(args):
 
     # do the loop thingie
     while True:
-        timestamp = datetime.datetime.now()
-        info = p110.getDeviceInfo()
-        usage = p110.getEnergyUsage()
-        db.record(timestamp, info, usage)
+        try:
+            timestamp = datetime.datetime.now()
+            info = p110.getDeviceInfo()
+            usage = p110.getEnergyUsage()
+            db.record(timestamp, info, usage)
+        except Exception as e:
+            print(f"catch exception: {e}")
         time.sleep(args.sleep)
 
 
