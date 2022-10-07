@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the p110mon service.
+
+[Service]
+Type=simple
+User=jan
+Group=jan
+ExecStart=/opt/p1serial/venv/bin/python /opt/p1serial/bin/p1serial
+
+[Install]
+WantedBy=multi-user.target

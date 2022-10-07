@@ -1,5 +1,6 @@
 import sqlite3
-import datetime
+import json
+
 
 class P110DBase:
 
@@ -9,19 +10,18 @@ class P110DBase:
         cur = con.cursor()
         query = ('CREATE TABLE IF NOT EXISTS records ('
                       'timestamp   text,'
-                      'locdate   text,'
-                      'delivtarief1   float,'
-                      'delivtarief2   float'
+                      'info text,'
+                      'usage text'
                  ')')
         cur.execute(query)
         con.close()
 
-    def record(self, timestamp, locdate, delivtarief1, delivtarief2):
+    def record(self, timestamp, info, usage):
         try:
             con = sqlite3.connect(self.dbasepath)
             cur = con.cursor()
-            query = 'INSERT INTO records VALUES (?,?,?,?)'
-            cur.execute(query, (timestamp, locdate, delivtarief1, delivtarief2))
+            query = 'INSERT INTO records VALUES (?,?,?)'
+            cur.execute(query, (timestamp, json.dumps(info), json.dumps(usage)))
             con.commit()
             con.close()
         except Exception as e:
