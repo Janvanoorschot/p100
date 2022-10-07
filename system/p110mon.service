@@ -5,7 +5,7 @@ Description=Run the p110mon service.
 Type=simple
 User=jan
 Group=jan
-ExecStart=/opt/p1serial/venv/bin/python /opt/p1serial/bin/p1serial
+ExecStart=/opt/p100/venv/bin/python /opt/p100/bin/p110mon --file /etc/p100/p110mon.config
 
 [Install]
 WantedBy=multi-user.target
