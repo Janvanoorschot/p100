@@ -14,6 +14,7 @@ class LoadFromFile (argparse.Action):
     def __call__ (self, parser, namespace, values, option_string = None):
         with values as f:
             # parse arguments in the file and store them in the target namespace
+            # the arguments in the file have the same syntax/content as the commandline
             parser.parse_args(f.read().split(), namespace)
 
 
