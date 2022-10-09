@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+import sqlite3
+import sys
+import os
+import json
+
+
+rootpath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(rootpath)
+
+import argparse
+
+
+if __name__ == "__main__":
+    # get commandline arguments
+    parser = argparse.ArgumentParser(description='Dump the P1 serial database.')
+    parser.add_argument('--dbase', type=str, default="/opt/p100/dbases/p110mon.db", help='SQL Lite dbase file')
+    args = parser.parse_args()
+
+    con = sqlite3.connect(args.dbase)
+    cur = con.cursor()
+    cur.execute("""
+            SELECT * FROM (
+                SELECT * FROM records ORDER BY timestamp DESC LIMIT 3
+            ) as r ORDER BY timestamp
+    """)
+
+    for row in cur:
+        timestamp = row[0]
+        info = json.loads(row[1])
+        usage = json.loads(row[2])
+        print(json.dumps(usage, indent=4))
+    con.close()
