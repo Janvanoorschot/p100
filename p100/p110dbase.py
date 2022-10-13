@@ -10,18 +10,18 @@ class P110DBase:
         con = sqlite3.connect(self.dbasepath)
         cur = con.cursor()
         query = ('CREATE TABLE IF NOT EXISTS records ('
-                      't timestamp,'
+                      't timestamp PRIMARY KEY,'
                       'info text,'
                       'usage text'
                  ')')
         cur.execute(query)
         query = ('CREATE TABLE IF NOT EXISTS power ('
-                      't timestamp,'
+                      't timestamp PRIMARY KEY,'
                       'power integer'
                  ')')
         cur.execute(query)
         query = ('CREATE TABLE IF NOT EXISTS usage ('
-                      't timestamp,'
+                      't timestamp PRIMARY KEY,'
                       'kwh integer'
                  ')')
         cur.execute(query)
@@ -52,7 +52,7 @@ class P110DBase:
         t1 = datetime.datetime(t.year, t.month, t.day, t.hour, t.minute, 0, 0)
         pw = usage["result"]["current_power"]
         cur = con.cursor()
-        query = 'INSERT INTO power VALUES (?,?)'
+        query = 'INSERT OR REPLACE INTO power VALUES (?,?)'
         cur.execute(query, (t1, pw))
 
     def calc_kwh(self, con, usage):
@@ -64,7 +64,7 @@ class P110DBase:
         kwh1 = usage["result"]["past7d"][d][h]
         t1 = datetime.datetime(t.year, t.month, t.day, t.hour, 0, 0, 0)
         cur = con.cursor()
-        query = 'INSERT INTO usage VALUES (?,?)'
+        query = 'INSERT OR REPLACE INTO usage VALUES (?,?)'
         cur.execute(query, (t1, kwh1))
         # get the kwh for the previous hour
         if(h == 0) :
@@ -75,6 +75,6 @@ class P110DBase:
         kwh2 = usage["result"]["past7d"][d][h]
         t2 = t1 - datetime.timedelta(hours = 1)
         cur = con.cursor()
-        query = 'INSERT INTO usage VALUES (?,?)'
+        query = 'INSERT OR REPLACE INTO usage VALUES (?,?)'
         cur.execute(query, (t2, kwh2))
 

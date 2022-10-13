@@ -19,11 +19,38 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     con = sqlite3.connect(args.dbase)
+
+    # Dump hte last 200 power records
+    print("\n### POWER ###\n")
+    cur = con.cursor()
+    cur.execute("""
+        SELECT * FROM power ORDER BY t DESC LIMIT 200
+        """
+    )
+    for row in cur:
+        timestamp = row[0]
+        power = row[1]
+        print(f"{timestamp}: {power}")
+
+   # Dump hte last 200 usage records
+    print("\n### USAGE ###\n")
+    cur = con.cursor()
+    cur.execute("""
+        SELECT * FROM usage ORDER BY t DESC LIMIT 200
+        """
+    )
+    for row in cur:
+        timestamp = row[0]
+        kwh = row[1]
+        print(f"{timestamp}: {kwh}")
+
+    # Dump the last three measurements maintained by the P110
+    print("\n### P110 ###\n")
     cur = con.cursor()
     cur.execute("""
             SELECT * FROM (
-                SELECT * FROM records ORDER BY timestamp DESC LIMIT 3
-            ) as r ORDER BY timestamp
+                SELECT * FROM records ORDER BY t DESC LIMIT 3
+            ) as r ORDER BY t
     """)
 
     for row in cur:
