@@ -5,6 +5,8 @@ import os
 import time
 import argparse
 import datetime
+import sqlite3
+from PyP100 import PyP110
 
 rootdir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(rootdir)
@@ -17,36 +19,54 @@ class LoadFromFile (argparse.Action):
             # the arguments in the file have the same syntax/content as the commandline
             parser.parse_args(f.read().split(), namespace)
 
+def connect(host, user, password):
+    p110 = PyP110.P110(host, user, password)
+    p110.handshake()
+    p110.login()
+    return p110
+
 
 def main(args):
     # do the loop thingie
+    sources = []
+    connections = {}
+    db = None
+    try:
+        # collect a list of P110 instances that need to be interrogated
+        con = sqlite3.connect(args.dbase)
+        cur = con.cursor()
+        query = 'GET name, host, user, password FROM sources'
+        cur.execute(query)
+        for row in cur:
+            sources.append({
+                "name": row[0],
+                "host": row[1],
+                "user": row[2],
+                "password": row[3]
+            })
+            connections[row[0]] = connect(row[1],row[2],row[3])
+        # Create the database session
+        from p100 import P110DBase
+        db = P110DBase(args.dbase)
+    except Exception as e:
+        print(f"Error initializing: {e}")
+        exit(1)
+
+    # start the near endless loop
     while True:
-        try:
-            # Create the P110 session
-            from PyP100 import PyP110
-            p110 = PyP110.P110(args.ip, args.username, args.password)
-            p110.handshake()
-            p110.login()
-
-            # Create the database session
-            from p100 import P110DBase
-            db = P110DBase(args.dbase)
-
-            while True:
-                timestamp = datetime.datetime.now()
+        timestamp = datetime.datetime.now()
+        for name,p110 in connections.items():
+            try:
                 info = p110.getDeviceInfo()
                 usage = p110.getEnergyUsage()
-                db.record(timestamp, info, usage)
-                time.sleep(args.sleep)
-        except Exception as e:
-            print(f"catch exception: {e}")
+                db.record(timestamp, name, info, usage)
+            except Exception as e:
+                pass
+        time.sleep(args.sleep)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='P110 Monitor Service.')
-    parser.add_argument('--ip', type=str, default='192.168.2.2', help='P110 plug')
-    parser.add_argument('--username', type=str, default='some@one.com', help='username')
-    parser.add_argument('--password', type=str, default='secret', help='password')
     parser.add_argument('--dbase', type=str, default='/opt/p100/dbases/p110mon.db', help='SQL Lite database file')
     parser.add_argument('--sleep', type=int, default=60, help='Time between samples')
     parser.add_argument('--file', type=open, default="/etc/p100/p110mon.config", action=LoadFromFile)
