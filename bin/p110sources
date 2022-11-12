@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import argparse
+import json
+
+rootdir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(rootdir)
+
+def main(args):
+    # Create the database session
+    from p100 import P110DBase
+    db = P110DBase(args.dbase)
+
+    # load the json blob with source definitions
+    data = []
+    try:
+        with open(args.file) as f:
+           data = json.load(f)
+    except Exception as e:
+        pass
+
+    # loop through data and add if possible
+    for item in data:
+        if (
+                type(item) is dict
+                and 'name' in item
+                and 'type' in item
+                and 'host' in item
+                and 'user' in item
+                and 'password' in item
+        ):
+            db.add_source(item['name'], item['type'], item['host'], item['user'], item['password'], )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Loads P110 sources into database.')
+    parser.add_argument('--dbase', type=str, default='/mnt/janbv/sys/p100/p110mon.db', help='SQL Lite database file')
+    parser.add_argument('--file', type=str, default='/mnt/janbv/sys/p100/p110sources.json', help='json array of P110 sources')
+    args = parser.parse_args()
+    main(args)
