@@ -36,7 +36,10 @@ class P110DBase:
                  'id  INTEGER PRIMARY KEY AUTOINCREMENT,'
                  't timestamp,'
                  'name text,'
-                 'kwh integer'
+                 'today_runtime integer,'
+                 'month_runtime integer,'
+                 'today_energy integer,'
+                 'month_energy integer'
                  ')')
         cur.execute(query)
         con.close()
@@ -81,24 +84,14 @@ class P110DBase:
         cur.execute(query, (t1, name, pw))
 
     def calc_kwh(self, con, name, usage):
+        # get a python timestamp
         timestr = usage["result"]["local_time"]
         t = datetime.datetime.strptime(timestr, "%Y-%m-%d %H:%M:%S")
-        # get the kwh for the current hour
-        d = 6
-        h = t.hour
-        kwh1 = usage["result"]["past7d"][d][h]
-        t1 = datetime.datetime(t.year, t.month, t.day, t.hour, 0, 0, 0)
+        # get the data
+        today_runtime = usage["result"]["today_runtime"]
+        month_runtime = usage["result"]["month_runtime"]
+        today_energy = usage["result"]["today_energy"]
+        month_energy = usage["result"]["month_energy"]
         cur = con.cursor()
-        query = 'INSERT OR REPLACE INTO usage(t,name,kwh) VALUES (?,?,?)'
-        cur.execute(query, (t1, name, kwh1))
-        # get the kwh for the previous hour
-        if (h == 0):
-            d = d - 1
-            h = 23
-        else:
-            h = h - 1
-        kwh2 = usage["result"]["past7d"][d][h]
-        t2 = t1 - datetime.timedelta(hours=1)
-        cur = con.cursor()
-        query = 'INSERT OR REPLACE INTO usage(t,name,kwh) VALUES (?,?, ?)'
-        cur.execute(query, (t2, name, kwh2))
+        query = 'INSERT OR REPLACE INTO usage(t,name,today_runtime,month_runtime,today_energy,month_energy) VALUES (?,?,?,?,?,?)'
+        cur.execute(query, (t, name, today_runtime, today_energy, today_energy, month_energy))
