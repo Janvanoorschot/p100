@@ -94,4 +94,4 @@ class P110DBase:
         month_energy = usage["result"]["month_energy"]
         cur = con.cursor()
         query = 'INSERT OR REPLACE INTO usage(t,name,today_runtime,month_runtime,today_energy,month_energy) VALUES (?,?,?,?,?,?)'
-        cur.execute(query, (t, name, today_runtime, today_energy, today_energy, month_energy))
+        cur.execute(query, (t, name, today_runtime, month_runtime, today_energy, month_energy))
