@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+
+# 2025-03-10: Moved this file from burojan and did not
+#             try to get it running again
+
+import argparse
+import os
+import sqlite3
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime, timedelta
+rootpath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+
+# create the energy-dbase handler and start it in a background thread with listener attached
+# listener = EventListener()
+# from burojan.energy import  EnergyDbase
+# edbase = EnergyDbase(burojan.view.app.config["DB_URI"], listener)
+# thread = Thread(target=edbase.run, daemon=True)
+# thread.start()
+
+
+
+def main(args, starttime, endtime):
+    print(f"starttime={starttime}, endtime={endtime}")
+    # open the database
+    dbase = args.dbase
+    try:
+        with sqlite3.connect(dbase, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as con:
+            query = """
+            SELECT 
+                id,t as "t [timestamp]",name,today_runtime,month_runtime,today_energy,month_energy 
+            FROM 
+                usage 
+            WHERE
+                t > ?
+                AND t < ?
+            ORDER BY t ASC
+            """
+            sql_query = pd.read_sql_query(query, con, params=[starttime, endtime])
+            df = pd.DataFrame(sql_query, columns=['t', 'name', 'today_energy'])
+            df = df.set_index('t')
+            overview = df.resample("1H").mean(numeric_only=True)
+            for hostname in df.name.unique():
+                host = df.loc[df['name'] == hostname]
+                host = host.resample("1H").mean(numeric_only=True)
+                host['previous'] = host['today_energy'].shift(1)
+                host['hourly_usage'] = host['today_energy'] - host['previous']
+                host = host.drop(['previous', 'today_energy'], axis=1)
+                overview[hostname] = host['hourly_usage']
+            # drop the first row
+            overview = overview.drop(['today_energy'], axis=1)
+            overview = overview.iloc[1:, :]
+            ax = overview.plot(kind="bar")
+            # try to format the xaxis
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%h"))
+            plt.title(f'Energy usage: {starttime.strftime("%a %d %b")}')
+            # do the plotting
+            plt.show()
+    except Exception as e:
+        pass
+    pass
+
+
+if __name__ == "__main__":
+    # get commandline parameters and mix everything
+    parser = argparse.ArgumentParser(description='Report on energy usage.')
+    parser.add_argument('--dbase', type=str, default='/mnt/janbv/sys/p100/p110mon.db', help='SQL Lite database file')
+    parser.add_argument('--start', type=str, help='starttime')
+    parser.add_argument('--hours', type=int, default=8, help='starttime')
+    args = parser.parse_args()
+
+    # calculate the time period
+    if args.start == None:
+        now = datetime.now()
+        yesterday = now - timedelta(hours=24)
+        starttime = datetime(yesterday.year, yesterday.month, yesterday.day, 8,0)
+    else:
+        starttime = datetime.strptime(args.start, '%Y-%m-%d %H:%M')
+    endtime = starttime + timedelta(hours=args.hours)
+    main(args, starttime, endtime)
